@@ -1,0 +1,233 @@
+From 043e59b9ea0c53a4cc9d3d965106f5f7977b2e9a Mon Sep 17 00:00:00 2001
+From: Chandrashekhar R <73425927+cr2007@users.noreply.github.com>
+Date: Wed, 10 May 2023 08:03:10 +0000
+Subject: [PATCH 1/8] Adds boolean value in the `IState` Interface
+
+---
+ src/App.tsx | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 0728518..0c3a4b1 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -8,6 +8,7 @@ import './App.css';
+  */
+ interface IState {
+   data: ServerRespond[],
++  showGraph: boolean,
+ }
+ 
+ /**
+-- 
+2.25.1
+
+
+From 123f1dc3e25bcc97cd6b941e6bddc041b65fd4b9 Mon Sep 17 00:00:00 2001
+From: Chandrashekhar R <73425927+cr2007@users.noreply.github.com>
+Date: Wed, 10 May 2023 08:03:44 +0000
+Subject: [PATCH 2/8] Defines initial graph state in the constructor
+
+---
+ src/App.tsx | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 0c3a4b1..ba80837 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -23,6 +23,7 @@ class App extends Component<{}, IState> {
+       // data saves the server responds.
+       // We use this state to parse data down to the child element (Graph) as element property
+       data: [],
++      showGraph: false,
+     };
+   }
+ 
+-- 
+2.25.1
+
+
+From 7547d87c62fb737adebc3515674156d17d74ef23 Mon Sep 17 00:00:00 2001
+From: Chandrashekhar R <73425927+cr2007@users.noreply.github.com>
+Date: Wed, 10 May 2023 08:04:15 +0000
+Subject: [PATCH 3/8] Adds a condition in the `renderGraph()` function
+
+---
+ src/App.tsx | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index ba80837..84eeb87 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -31,7 +31,9 @@ class App extends Component<{}, IState> {
+    * Render Graph react component with state.data parse as property data
+    */
+   renderGraph() {
+-    return (<Graph data={this.state.data}/>)
++    if (this.state.showGraph) {
++      return (<Graph data={this.state.data}/>)
++    }
+   }
+ 
+   /**
+-- 
+2.25.1
+
+
+From c4fca6f63501aec8284116d14384e88f6225d1d2 Mon Sep 17 00:00:00 2001
+From: Chandrashekhar R <73425927+cr2007@users.noreply.github.com>
+Date: Wed, 10 May 2023 08:05:34 +0000
+Subject: [PATCH 4/8] Modifies the method
+
+Gets data from the server continuously instead of every button click
+---
+ src/App.tsx | 20 +++++++++++++++-----
+ 1 file changed, 15 insertions(+), 5 deletions(-)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 84eeb87..a5c63fb 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -40,11 +40,21 @@ class App extends Component<{}, IState> {
+    * Get new data from server and update the state with the new data
+    */
+   getDataFromServer() {
+-    DataStreamer.getData((serverResponds: ServerRespond[]) => {
+-      // Update the state by creating a new array of data that consists of
+-      // Previous data in the state and the new data from server
+-      this.setState({ data: [...this.state.data, ...serverResponds] });
+-    });
++    let x = 0;
++    const interval = setInterval(() => {
++      DataStreamer.getData((serverResponds: ServerRespond[]) => {
++        // Update the state by creating a new array of data that consists of
++        // Previous data in the state and the new data from server
++        this.setState({
++          data: serverResponds,
++          showGraph: true,
++        });
++      });
++      x++;
++      if (x > 1000) {
++        clearInterval(interval);
++      }
++    }, 100);
+   }
+ 
+   /**
+-- 
+2.25.1
+
+
+From 9b003af4c19d0654eeab4b3015d5a09fae0f95b8 Mon Sep 17 00:00:00 2001
+From: Chandrashekhar R <73425927+cr2007@users.noreply.github.com>
+Date: Wed, 10 May 2023 10:13:38 +0000
+Subject: [PATCH 5/8] Imports setInterval
+
+---
+ src/App.tsx | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/App.tsx b/src/App.tsx
+index a5c63fb..e2333de 100755
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -2,6 +2,7 @@ import React, { Component } from 'react';
+ import DataStreamer, { ServerRespond } from './DataStreamer';
+ import Graph from './Graph';
+ import './App.css';
++import { setInterval } from 'timers';
+ 
+ /**
+  * State declaration for <App />
+-- 
+2.25.1
+
+
+From 394cdb0140298ddf63cef0b0dc952bcec9af52d5 Mon Sep 17 00:00:00 2001
+From: Chandrashekhar R <73425927+cr2007@users.noreply.github.com>
+Date: Wed, 10 May 2023 10:14:25 +0000
+Subject: [PATCH 6/8] Extends the `HTMLElement` class
+
+---
+ src/Graph.tsx | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index 3b2a7da..a382411 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -14,7 +14,7 @@ interface IProps {
+  * Perspective library adds load to HTMLElement prototype.
+  * This interface acts as a wrapper for Typescript compiler.
+  */
+-interface PerspectiveViewerElement {
++interface PerspectiveViewerElement extends HTMLElement {
+   load: (table: Table) => void,
+ }
+ 
+-- 
+2.25.1
+
+
+From 9541e6e0d147d75e06b306e1a95c47dc179fd504 Mon Sep 17 00:00:00 2001
+From: Chandrashekhar R <73425927+cr2007@users.noreply.github.com>
+Date: Wed, 10 May 2023 10:15:05 +0000
+Subject: [PATCH 7/8] Simplifies the `elem` definition
+
+---
+ src/Graph.tsx | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index a382411..757903a 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -32,7 +32,7 @@ class Graph extends Component<IProps, {}> {
+ 
+   componentDidMount() {
+     // Get element to attach the table from the DOM.
+-    const elem: PerspectiveViewerElement = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
++    const elem = document.getElementsByTagName('perspective-viewer')[0] as unknown as PerspectiveViewerElement;
+ 
+     const schema = {
+       stock: 'string',
+-- 
+2.25.1
+
+
+From d5ce5cb34e188a7216c61b18285c475061f25056 Mon Sep 17 00:00:00 2001
+From: Chandrashekhar R <73425927+cr2007@users.noreply.github.com>
+Date: Wed, 10 May 2023 10:16:13 +0000
+Subject: [PATCH 8/8] Adds more attributes to `elem`
+
+---
+ src/Graph.tsx | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/src/Graph.tsx b/src/Graph.tsx
+index 757903a..7d4c3ce 100644
+--- a/src/Graph.tsx
++++ b/src/Graph.tsx
+@@ -46,9 +46,15 @@ class Graph extends Component<IProps, {}> {
+     }
+     if (this.table) {
+       // Load the `table` in the `<perspective-viewer>` DOM reference.
+-
+       // Add more Perspective configurations here.
+       elem.load(this.table);
++      elem.setAttribute("view", "y_line");
++      elem.setAttribute("column-pivots", '["stock"]');
++      elem.setAttribute("row-pivots", '["timestamp"]');
++      elem.setAttribute("columns", '["top_ask_price"]');
++      elem.setAttribute("aggregates",
++        '{"stock":"distinct_count", "top_ask_price":"avg", "top_bid_price":"avg", "timestamp":"distinct_count"}'
++      );
+     }
+   }
+ 
+-- 
+2.25.1
+
